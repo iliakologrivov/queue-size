@@ -1,0 +1,37 @@
+{
+  "name": "iliakologrivov/queue-size",
+  "description": "Laravel Queue:size console command",
+  "keywords": [
+    "laravel",
+    "queue",
+    "size"
+  ],
+  "authors": [
+    {
+      "name": "Ilia Kologrivov",
+      "email": "iliakologrivov@yandex.ru"
+    }
+  ],
+  "require": {
+    "php": ">=7.1.0",
+    "illuminate/queue": "~5.5"
+  },
+  "require-dev": {},
+  "autoload": {
+    "psr-4": {
+      "Iliakologrivov\\Queuesize\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Iliakologrivov\\Queuesize\\QueueSizeServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "prefer-stable": true,
+  "minimum-stability": "dev"
+}
