@@ -14,7 +14,7 @@ class QueueSizeCommand extends Command
     protected $signature = 'queue:size
                             {--queue=* : Queue name}
                             {--delay=0 : Delay in seconds}
-                            {--failed-jobs : Has show count failed jobs}
+                            {--failed-jobs : Show count failed jobs}
                             {--p|preset= : Preset name}';
 
     /**
