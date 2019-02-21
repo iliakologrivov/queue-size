@@ -12,10 +12,10 @@ class QueueSizeCommand extends Command
      * @var string
      */
     protected $signature = 'queue:size
-                            {--queue=*}
-                            {--delay=0}
-                            {--failed-jobs}
-                            {--p|preset=}';
+                            {--queue=* : Queue name}
+                            {--delay=0 : Delay in seconds}
+                            {--failed-jobs : Has show count failed jobs}
+                            {--p|preset= : Preset name}';
 
     /**
      * The console command description.
@@ -23,16 +23,6 @@ class QueueSizeCommand extends Command
      * @var string
      */
     protected $description = 'View queue size';
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * Execute the console command.
@@ -123,9 +113,9 @@ class QueueSizeCommand extends Command
             $preset = $config[$presetName] ?? [];
 
             return [
-                'delay' => $preset['delay'] ?? 0,
-                'queues' => $preset['queues'] ?? [],
-                'failed-jobs' => $preset['failed-jobs'] ?? false,
+                'delay' => $preset['delay'] ?? $this->option('delay'),
+                'queues' => $preset['queues'] ?? array_filter($this->option('queue')),
+                'failed-jobs' => $preset['failed-jobs'] ?? $this->option('failed-jobs'),
             ];
         } else {
             return [
