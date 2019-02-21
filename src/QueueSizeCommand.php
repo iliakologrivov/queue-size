@@ -43,6 +43,10 @@ class QueueSizeCommand extends Command
     {
         $params = $this->getParams();
 
+        if (empty($params['queues'])) {
+            return $this->error('Queues not specified!');
+        }
+
         $headers = ['Queue name', 'Count jobs'];
 
         if ($params['failed-jobs']) {
