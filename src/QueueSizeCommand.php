@@ -15,7 +15,9 @@ class QueueSizeCommand extends Command
                             {--queue=* : Queue name}
                             {--delay=0 : Delay in seconds}
                             {--failed-jobs : Show count failed jobs}
-                            {--p|preset= : Preset name}';
+                            {--p|preset= : Preset name}
+                            {--f|full-info : Show more information on queue size (only redis)}
+                            {--min : Minimal display view}';
 
     /**
      * The console command description.
@@ -37,7 +39,11 @@ class QueueSizeCommand extends Command
             return $this->error('Queues not specified!');
         }
 
-        $headers = ['Queue name', 'Count jobs'];
+        if ($params['full-info']) {
+            $headers = ['Queue name', 'Total count jobs', 'On queue', 'On delayed', 'On reserve'];
+        } else {
+            $headers = ['Queue name', 'Count jobs'];
+        }
 
         if ($params['failed-jobs']) {
             $headers[] = 'Failed Jobs';
@@ -50,10 +56,22 @@ class QueueSizeCommand extends Command
 
             $rows = [];
             foreach ($params['queues'] as $queue) {
-                $row = [
-                    '<info>' . $queue . '</info>',
-                    \Queue::size($queue),
-                ];
+                if ($params['full-info']) {
+                    list($onQuue, $onDelayed, $onReserve) = $this->getFullSizeInfo($queue);
+
+                    $row = [
+                        $queue,
+                        $onQuue + $onDelayed + $onReserve,
+                        $onQuue,
+                        $onDelayed,
+                        $onReserve
+                    ];
+                } else {
+                    $row = [
+                        '<info>' . $queue . '</info>',
+                        \Queue::size($queue),
+                    ];
+                }
 
                 if ($params['failed-jobs']) {
                     $row[] = $countFailedJobs[$queue] ?? 0;
@@ -62,7 +80,17 @@ class QueueSizeCommand extends Command
                 $rows[] = $row;
             }
 
-            $this->table($headers, $rows);
+            if ($params['min']) {
+                $this->output->write(implode(PHP_EOL, array_map(function($row){
+                    return implode(' ', $row);
+                }, $rows)) . PHP_EOL);
+
+                $countRemoveLines = count($rows);
+            } else {
+                $this->table($headers, $rows);
+
+                $countRemoveLines = count($rows) + 4;
+            }
 
             if ($params['delay'] > 0) {
                 sleep($params['delay']);
@@ -70,7 +98,7 @@ class QueueSizeCommand extends Command
                 break;
             }
 
-            $this->removeLines(count($rows) + 4);
+            $this->removeLines($countRemoveLines);
         }
     }
 
@@ -80,7 +108,7 @@ class QueueSizeCommand extends Command
      * @param array $queues
      * @return array
      */
-    protected function getCountFailedJobs(array $queues)
+    protected function getCountFailedJobs(array $queues): array
     {
         try {
             return \DB::table('failed_jobs')
@@ -104,7 +132,7 @@ class QueueSizeCommand extends Command
      *
      * @return array
      */
-    protected function getParams()
+    protected function getParams(): array
     {
         $presetName = $this->option('preset');
         if (! empty($presetName)) {
@@ -116,12 +144,16 @@ class QueueSizeCommand extends Command
                 'delay' => $preset['delay'] ?? $this->option('delay'),
                 'queues' => $preset['queues'] ?? array_filter($this->option('queue')),
                 'failed-jobs' => $preset['failed-jobs'] ?? $this->option('failed-jobs'),
+                'full-info' => $preset['full-info'] ?? $this->option('full-info'),
+                'min' => $preset['min'] ?? $this->option('min'),
             ];
         } else {
             return [
                 'delay' => $this->option('delay'),
                 'queues' => array_filter($this->option('queue')),
                 'failed-jobs' => $this->option('failed-jobs'),
+                'full-info' => $this->option('full-info'),
+                'min' => $this->option('min'),
             ];
         }
     }
@@ -133,8 +165,19 @@ class QueueSizeCommand extends Command
      */
     protected function removeLines(int $countLines)
     {
-        for ($lineIndex = 0; $lineIndex < $countLines; $lineIndex++) {
-            $this->output->write("\033[1A");
-        }
+        $this->output->write("\x0D" . str_repeat("\033[1A", $countLines));
+    }
+
+    /**
+     * Get more info of queue size.
+     *
+     * @param string $queue
+     * @return mixed
+     */
+    protected function getFullSizeInfo(string $queue): array
+    {
+        return \Illuminate\Support\Facades\Redis::eval(
+            "return {redis.call('llen', KEYS[1]), redis.call('zcard', KEYS[2]), redis.call('zcard', KEYS[3])}", 3, 'queues:' . $queue, 'queues:' . $queue . ':delayed', 'queues:' . $queue . ':reserved'
+        );
     }
 }

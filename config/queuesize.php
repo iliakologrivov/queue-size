@@ -7,6 +7,8 @@ return [
             'default',
         ],
         'delay' => 1, //Delay in seconds
-        'failed-jobs' => false //Has show count failed jobs
+        'failed-jobs' => false, //Show count failed jobs
+        'full-info' => false, //Show more information on queue size (only redis)
+        'min' => false //Minimal display view
     ]
 ];
